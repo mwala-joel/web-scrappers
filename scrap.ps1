@@ -1,10 +1,9 @@
-# PowerShell script to download YouTube playlist with user input prompt
+# PowerShell script to download YouTube playlist with yt-dlp defaults
 # Requires yt-dlp to be installed and available in PATH
 
 param(
     [string]$BaseOutputDir = ".\playlists",
-    [int]$StartNumber = 1,
-    [string]$Resolution = "720"
+    [int]$StartNumber = 1
 )
 
 Write-Host "=" * 80 -ForegroundColor Cyan
@@ -111,7 +110,7 @@ Write-Host "`n" -NoNewline
 Write-Host "Ready to download:" -ForegroundColor Cyan
 Write-Host "  Playlist: $playlistTitle" -ForegroundColor White
 Write-Host "  Videos: $videoCount" -ForegroundColor White
-Write-Host "  Resolution: ${Resolution}p" -ForegroundColor White
+Write-Host "  Quality: yt-dlp defaults (best available)" -ForegroundColor White
 Write-Host "  Output: $PlaylistDir" -ForegroundColor White
 Write-Host "  Starting from: $($videoNumber.ToString('D2'))-" -ForegroundColor White
 
@@ -172,14 +171,9 @@ foreach ($url in $videoUrls) {
     Write-Host "=" * 80 -ForegroundColor Cyan
     
     try {
+        # Minimal yt-dlp command - let it use its defaults
         & yt-dlp `
             --output "$PlaylistDir/${paddedNumber}- %(title)s.%(ext)s" `
-            --format "best[height<=${Resolution}]" `
-            --concurrent-fragments 16 `
-            --progress `
-            --no-warnings `
-            --continue `
-            --no-overwrites `
             $url
         
         Write-Host "Successfully downloaded ${paddedNumber}- ($currentVideo/$actualVideoCount)" -ForegroundColor Green
@@ -205,6 +199,7 @@ Write-Host "=" * 80 -ForegroundColor Green
 Write-Host "DOWNLOAD COMPLETED!" -ForegroundColor Green
 Write-Host "=" * 80 -ForegroundColor Green
 Write-Host "Playlist: $playlistTitle" -ForegroundColor White
+Write-Host "Quality: yt-dlp defaults" -ForegroundColor White
 Write-Host "Total videos in playlist: $actualVideoCount" -ForegroundColor White
 Write-Host "Successful downloads: $successCount" -ForegroundColor Green
 Write-Host "Skipped (already exist): $skippedCount" -ForegroundColor Yellow
@@ -221,7 +216,7 @@ Write-Host "=" * 80 -ForegroundColor Green
 
 # Show downloaded files summary
 if (Test-Path $PlaylistDir) {
-    $downloadedFiles = Get-ChildItem -Path $PlaylistDir -Filter "*.mp4" | Sort-Object Name
+    $downloadedFiles = Get-ChildItem -Path $PlaylistDir -Filter "*.*" | Where-Object { $_.Extension -match '\.(mp4|mkv|webm|avi)$' } | Sort-Object Name
     if ($downloadedFiles.Count -gt 0) {
         Write-Host "`nDownloaded files ($($downloadedFiles.Count)):" -ForegroundColor Yellow
         $downloadedFiles | Select-Object -First 5 | ForEach-Object { 
